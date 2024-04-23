@@ -1,2 +1,2 @@
 # CSSE4011
-CSSE4011 Project Repo - Au.3 Gesture Recognition with mmW Radar Tracking
+CSSE4011 Project Repo - Minecraft Gesture and Movement Recognition
