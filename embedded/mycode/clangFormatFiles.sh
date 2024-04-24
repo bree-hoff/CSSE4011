@@ -5,8 +5,7 @@
 directories=(
     "mylib"
     "include"
-    "apps/base/src"
-    "apps/mobile/src"
+    "apps/Thingy52/src"
 )
 
 for directory in "${directories[@]}"
