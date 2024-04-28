@@ -1,8 +1,7 @@
 # KPIs
-* Latency - Ultrasonic Sensors: Measures the time taken for the ultrasonic sensors to detect movement, for a sampling rate > 2kHz.
-* Latency - Camera: Measures the time taken for camera to detect a gesture.
-* Latency - GUI: Measures the time taken for inputs to appear on the GUI, and for HID packets to be displayed in-game.
-* Accuracy: Liklihood of detecting a gesture/movement correctly. Methods of unsupervised learning may be employed and assessed in accordance with this KPI.
-* Reliability: AI detection of gestures in different lighting conditions, high-activity areas, and different subjects (i.e., environmental robustness).
-* Display: Should produce a timely display of various actions on the Minecraft interface, as well as the GUI.
-* User Experience: Measures the user's satisfaction with the game and its interface.
+* Accuracy: Measures the likelihood of detecting a gesture or movement correctly. The ML gesture recognition of this model should be at least 60% accurate. The movement detection via the ultrasonic sensors should be at least 80% accurate. Button press detection via the Thingy:52 must be at least 95% accurate.
+* Latency (Sensors):  Measures the time taken for the ultrasonic sensors, webcam and Thingy:52 to detect movement, gestures and button presses. The ultrasonic sensors should detect movement in a timely manner, with a minimum of 10 samples per second. The gesture processing should run at a minimum of 5 frames per second, in high-computing conditions. 
+* Latency (GUI & Communications):  Measures the time taken for the HID packets and information to appear on the GUI and Minecraft interface. A maximum 2 second latency should be exhibited during MQTT and Bluetooth packets delivery from sensor to base node to GUI.
+* Reliability: Measures the ability of the system to measure gesture and movement for environmental robustness, particularly in low-light conditions, high-activity areas, and across a variety of different subjects. A minimum 20% variation between users should be accepted, and 30% variation for diffferent environmental conditions.
+* Display: Measures the timely update rate of the GUI, and success of the Minecraft interface to detect all HID packets sent. 
+* User Experience: Measures the user's satisfaction with the game and its interface. Measured using a collection of data from the review portion of the GUI.
