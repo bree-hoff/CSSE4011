@@ -23,7 +23,7 @@ const char* password    = "q-CLNqxPd3HB";
 const char* mqtt_server = "csse4011-iot.zones.eait.uq.edu.au";
 
 // Prac specific definitions
-const char* Globaltopic = "un46976569";
+const char* Globaltopic = "tellus-teal";
 
 #define TRIG_PIN 33
 #define ECHO_PIN 32
