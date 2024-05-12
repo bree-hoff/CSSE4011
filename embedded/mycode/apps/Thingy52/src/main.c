@@ -20,15 +20,15 @@
 #include <zephyr/bluetooth/gap.h>
 #include <zephyr/bluetooth/uuid.h>
 
-#define SLEEP_TIME_MS 1 // Loop sleep time
-#define DEBOUNCE_TIME 220 // Button debounce time 
+#define SLEEP_TIME_MS 1      // Loop sleep time
+#define DEBOUNCE_TIME 220    // Button debounce time
 #define TOGGLE_BYTE_INDEX 19 // index of byte toggled in bt beacon
 
 /* Zephyr BLE setup */
-// BLE advertising setup 
+// BLE advertising setup
 #define ADV_PARAM                                                                                  \
   BT_LE_ADV_PARAM(BT_LE_ADV_OPT_USE_IDENTITY | BT_LE_ADV_OPT_USE_NAME, BT_GAP_ADV_FAST_INT_MIN_1,  \
-                  BT_GAP_ADV_FAST_INT_MAX_1, NULL) 
+                  BT_GAP_ADV_FAST_INT_MAX_1, NULL)
 
 // Eddystone UUID data
 static uint8_t data[] = {0xaa, 0xfe, /* Eddystone UUID */
@@ -38,18 +38,17 @@ static uint8_t data[] = {0xaa, 0xfe, /* Eddystone UUID */
                          0x00, 0x00, 0x00, 0x00,              /* 10-byte Namespace */
                          0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; /* 6-byte Instance */
 
-//Eddystone beacon packet
+// Eddystone beacon packet
 static const struct bt_data ad[] = {BT_DATA_BYTES(BT_DATA_FLAGS, BT_LE_AD_NO_BREDR),
                                     BT_DATA_BYTES(BT_DATA_UUID16_ALL, 0xaa, 0xfe),
                                     BT_DATA(BT_DATA_MANUFACTURER_DATA, data, 20)};
 
-
 /* Global Variables */
-static uint32_t prev_tick; // Last recorded time of valied button press
+static uint32_t prev_tick;      // Last recorded time of valied button press
 static uint8_t buttonPressFlag; // Button press flag (set true when button pressed)
 
 /* Zephyr Hardware Config*/
-#define SW0_NODE DT_ALIAS(sw0) // On board pushbutton
+#define SW0_NODE DT_ALIAS(sw0)  // On board pushbutton
 #define LED_NODE DT_ALIAS(led2) // On board LED (Blue)
 
 // Config hardware
@@ -58,13 +57,13 @@ static struct gpio_callback button_cb_data;
 static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED_NODE, gpios);
 
 /*
- * Pushbutton ISR callback function 
+ * Pushbutton ISR callback function
  */
 void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t pins) {
 
   // Check that Button has not being recently pressed (debounce logic)
   if (k_uptime_get_32() - prev_tick > DEBOUNCE_TIME) {
-	buttonPressFlag = 1; // set flag on valid press
+    buttonPressFlag = 1; // set flag on valid press
   }
 
   // Update Time
@@ -72,11 +71,11 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t
 }
 
 /*
- * Main loop and device setup 
+ * Main loop and device setup
  */
 int main(void) {
 
-  int ret; //error flag
+  int ret; // error flag
 
   /* Config pushbutton and pushbutton ISR*/
   if (!gpio_is_ready_dt(&button)) {
@@ -105,7 +104,7 @@ int main(void) {
   if (ret < 0) {
     return 0;
   }
-  gpio_pin_set_dt(&led, true); //turn LED on
+  gpio_pin_set_dt(&led, true); // turn LED on
 
   /* Config and turn on BLE*/
   ret = bt_enable(NULL);
@@ -119,18 +118,18 @@ int main(void) {
   }
 
   while (true) {
-	// Button press 
-	if(buttonPressFlag == 1) {
+    // Button pressed
+    if (buttonPressFlag == 1) {
 
-		buttonPressFlag = 0; // clear flag
-		//toggle byte value in broadcasted bt packet
-		if(data[TOGGLE_BYTE_INDEX] == 0x01) {
-			data[TOGGLE_BYTE_INDEX] = 0x00;
-		} else {
-			data[TOGGLE_BYTE_INDEX] = 0x01;
-		}
-		bt_le_adv_update_data(ad, ARRAY_SIZE(ad), NULL, 0); //update bt adv
-	}
+      buttonPressFlag = 0; // clear flag
+      // toggle byte value in broadcasted bt packet
+      if (data[TOGGLE_BYTE_INDEX] == 0x01) {
+        data[TOGGLE_BYTE_INDEX] = 0x00;
+      } else {
+        data[TOGGLE_BYTE_INDEX] = 0x01;
+      }
+      bt_le_adv_update_data(ad, ARRAY_SIZE(ad), NULL, 0); // update bt adv
+    }
 
     k_msleep(SLEEP_TIME_MS);
   }
