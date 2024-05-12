@@ -12,7 +12,36 @@
 #include <zephyr/sys/printk.h>
 #include <inttypes.h>
 
+#include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/hci.h>
+#include <zephyr/bluetooth/uuid.h>
+#include <zephyr/bluetooth/gap.h>
+
 #define SLEEP_TIME_MS	1
+#define DEBOUNCE_DELAY_MS 50
+
+/*
+ * iBeacon Stuff
+ */
+#define ADV_PARAM                                                              \
+  BT_LE_ADV_PARAM(BT_LE_ADV_OPT_USE_IDENTITY | BT_LE_ADV_OPT_USE_NAME, BT_GAP_ADV_FAST_INT_MIN_1,       \
+                  BT_GAP_ADV_FAST_INT_MAX_1, NULL)
+
+static uint8_t iBeaconData[] = {0x4c, 0x00,           /* Apple */
+                                0x02, 0x15,           /* iBeacon */
+                                0x00,  0x00,  0x00, 0x00, /* UUID[15..12] */
+                                0x00,  0x00,            /* UUID[11..10] */
+                                0x00,  0x00,            /* UUID[9..8] */
+                                0x00,  0x00,            /* UUID[7..6] */
+                                0x00,  0x00,  0x00, 0x00, 0x00, 0x00, /* UUID[5..0] */
+                                0x00, 0x00,                     /* Major */
+                                0x00, 0x00,                     /* Minor */
+                                0xc8}; /* Calibrated RSSI @ 1m -56dBm*/
+
+static struct bt_data ad[] = {
+    BT_DATA_BYTES(BT_DATA_FLAGS, BT_LE_AD_NO_BREDR),
+    BT_DATA(BT_DATA_MANUFACTURER_DATA, iBeaconData, 25)};
+
 
 /*
  * Get button configuration from the devicetree sw0 alias. This is mandatory.
@@ -36,11 +65,17 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb,
 		    uint32_t pins)
 {
 	printk("Button pressed at %" PRIu32 "\n", k_cycle_get_32());
+	bt_le_adv_stop();
+
 }
 
 int main(void)
 {
 	int ret;
+	// Start advertising
+	bt_enable(NULL);
+	
+	
 
 	if (!gpio_is_ready_dt(&button)) {
 		printk("Error: button device %s is not ready\n",
@@ -84,6 +119,7 @@ int main(void)
 	}
 
 	printk("Press the button\n");
+	bt_le_adv_start(ADV_PARAM, ad, ARRAY_SIZE(ad), NULL, 0);
 	if (led.port) {
 		while (1) {
 			/* If we have an LED, match its state to the button's. */
@@ -91,6 +127,7 @@ int main(void)
 
 			if (val >= 0) {
 				gpio_pin_set_dt(&led, val);
+				
 			}
 			k_msleep(SLEEP_TIME_MS);
 		}
