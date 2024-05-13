@@ -1,5 +1,6 @@
 # Ultrasonic Sensor Integration Manual
 
+<pre>
 
          Y
                             - 0 cm
@@ -11,6 +12,7 @@
 
       |      |      |
     80cm   40cm    0cm
+</pre>
 
     ## Conditions:
 
