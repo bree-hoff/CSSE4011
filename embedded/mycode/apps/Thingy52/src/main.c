@@ -1,9 +1,13 @@
-/*
- * Copyright (c) 2016 Open-RnD Sp. z o.o.
- * Copyright (c) 2020 Nordic Semiconductor ASA
- *
- * SPDX-License-Identifier: Apache-2.0
- */
+/**
+ ******************************************************************************
+ * @file	main.c
+ * @author  Lewis Young
+ * @date    12/05/2024
+ * @brief	Broadcast a BLE beacon using the eddystone UID framwork, the beacon
+ * 			indicates a button press by toggling the final byte in the payload
+ * 			on a press.
+ ******************************************************************************
+ **/
 
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
@@ -11,89 +15,124 @@
 #include <zephyr/sys/util.h>
 #include <zephyr/sys/printk.h>
 #include <inttypes.h>
+#include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/hci.h>
+#include <zephyr/bluetooth/gap.h>
+#include <zephyr/bluetooth/uuid.h>
 
-#define SLEEP_TIME_MS	1
+#define SLEEP_TIME_MS 1      // Loop sleep time
+#define DEBOUNCE_TIME 220    // Button debounce time
+#define TOGGLE_BYTE_INDEX 19 // index of byte toggled in bt beacon
 
-/*
- * Get button configuration from the devicetree sw0 alias. This is mandatory.
- */
-#define SW0_NODE	DT_ALIAS(sw0)
-#if !DT_NODE_HAS_STATUS(SW0_NODE, okay)
-#error "Unsupported board: sw0 devicetree alias is not defined"
-#endif
-static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET_OR(SW0_NODE, gpios,
-							      {0});
+/* Zephyr BLE setup */
+// BLE advertising setup
+#define ADV_PARAM                                                                                  \
+  BT_LE_ADV_PARAM(BT_LE_ADV_OPT_USE_IDENTITY | BT_LE_ADV_OPT_USE_NAME, BT_GAP_ADV_FAST_INT_MIN_1,  \
+                  BT_GAP_ADV_FAST_INT_MAX_1, NULL)
+
+// Eddystone UUID data
+static uint8_t data[] = {0xaa, 0xfe, /* Eddystone UUID */
+                         0x00,       /* Eddystone-UID frame type */
+                         0x00,       /* Calibrated Tx power at 0m */
+                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                         0x00, 0x00, 0x00, 0x00,              /* 10-byte Namespace */
+                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; /* 6-byte Instance */
+
+// Eddystone beacon packet
+static const struct bt_data ad[] = {BT_DATA_BYTES(BT_DATA_FLAGS, BT_LE_AD_NO_BREDR),
+                                    BT_DATA_BYTES(BT_DATA_UUID16_ALL, 0xaa, 0xfe),
+                                    BT_DATA(BT_DATA_MANUFACTURER_DATA, data, 20)};
+
+/* Global Variables */
+static uint32_t prev_tick;      // Last recorded time of valied button press
+static uint8_t buttonPressFlag; // Button press flag (set true when button pressed)
+
+/* Zephyr Hardware Config*/
+#define SW0_NODE DT_ALIAS(sw0)  // On board pushbutton
+#define LED_NODE DT_ALIAS(led2) // On board LED (Blue)
+
+// Config hardware
+static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET_OR(SW0_NODE, gpios, {0});
 static struct gpio_callback button_cb_data;
+static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED_NODE, gpios);
 
 /*
- * The led0 devicetree alias is optional. If present, we'll use it
- * to turn on the LED whenever the button is pressed.
+ * Pushbutton ISR callback function
  */
-static struct gpio_dt_spec led = GPIO_DT_SPEC_GET_OR(DT_ALIAS(led0), gpios,
-						     {0});
+void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t pins) {
 
-void button_pressed(const struct device *dev, struct gpio_callback *cb,
-		    uint32_t pins)
-{
-	printk("Button pressed at %" PRIu32 "\n", k_cycle_get_32());
+  // Check that Button has not being recently pressed (debounce logic)
+  if (k_uptime_get_32() - prev_tick > DEBOUNCE_TIME) {
+    buttonPressFlag = 1; // set flag on valid press
+  }
+
+  // Update Time
+  prev_tick = k_uptime_get_32();
 }
 
-int main(void)
-{
-	int ret;
+/*
+ * Main loop and device setup
+ */
+int main(void) {
 
-	if (!gpio_is_ready_dt(&button)) {
-		printk("Error: button device %s is not ready\n",
-		       button.port->name);
-		return 0;
-	}
+  int ret; // error flag
 
-	ret = gpio_pin_configure_dt(&button, GPIO_INPUT);
-	if (ret != 0) {
-		printk("Error %d: failed to configure %s pin %d\n",
-		       ret, button.port->name, button.pin);
-		return 0;
-	}
+  /* Config pushbutton and pushbutton ISR*/
+  if (!gpio_is_ready_dt(&button)) {
+    printk("Error: button device %s is not ready\n", button.port->name);
+    return 0;
+  }
+  ret = gpio_pin_configure_dt(&button, GPIO_INPUT);
+  if (ret != 0) {
+    printk("Error %d: failed to configure %s pin %d\n", ret, button.port->name, button.pin);
+    return 0;
+  }
+  ret = gpio_pin_interrupt_configure_dt(&button, GPIO_INT_EDGE_TO_ACTIVE);
+  if (ret != 0) {
+    printk("Error %d: failed to configure interrupt on %s pin %d\n", ret, button.port->name,
+           button.pin);
+    return 0;
+  }
+  gpio_init_callback(&button_cb_data, button_pressed, BIT(button.pin));
+  gpio_add_callback(button.port, &button_cb_data);
 
-	ret = gpio_pin_interrupt_configure_dt(&button,
-					      GPIO_INT_EDGE_TO_ACTIVE);
-	if (ret != 0) {
-		printk("Error %d: failed to configure interrupt on %s pin %d\n",
-			ret, button.port->name, button.pin);
-		return 0;
-	}
+  /* Config LED*/
+  if (!gpio_is_ready_dt(&led)) {
+    return 0;
+  }
+  ret = gpio_pin_configure_dt(&led, GPIO_OUTPUT_ACTIVE);
+  if (ret < 0) {
+    return 0;
+  }
+  gpio_pin_set_dt(&led, true); // turn LED on
 
-	gpio_init_callback(&button_cb_data, button_pressed, BIT(button.pin));
-	gpio_add_callback(button.port, &button_cb_data);
-	printk("Set up button at %s pin %d\n", button.port->name, button.pin);
+  /* Config and turn on BLE*/
+  ret = bt_enable(NULL);
+  if (ret) {
+    printk("Bluetooth init failed (err %d)\n", ret);
+  }
+  ret = bt_le_adv_start(ADV_PARAM, ad, ARRAY_SIZE(ad), NULL, 0);
+  if (ret) {
+    printk("Advertising failed to start (err %d)\n", ret);
+    return 0;
+  }
 
-	if (led.port && !gpio_is_ready_dt(&led)) {
-		printk("Error %d: LED device %s is not ready; ignoring it\n",
-		       ret, led.port->name);
-		led.port = NULL;
-	}
-	if (led.port) {
-		ret = gpio_pin_configure_dt(&led, GPIO_OUTPUT);
-		if (ret != 0) {
-			printk("Error %d: failed to configure LED device %s pin %d\n",
-			       ret, led.port->name, led.pin);
-			led.port = NULL;
-		} else {
-			printk("Set up LED at %s pin %d\n", led.port->name, led.pin);
-		}
-	}
+  while (true) {
+    // Button pressed
+    if (buttonPressFlag == 1) {
 
-	printk("Press the button\n");
-	if (led.port) {
-		while (1) {
-			/* If we have an LED, match its state to the button's. */
-			int val = gpio_pin_get_dt(&button);
+      buttonPressFlag = 0; // clear flag
+      // toggle byte value in broadcasted bt packet
+      if (data[TOGGLE_BYTE_INDEX] == 0x01) {
+        data[TOGGLE_BYTE_INDEX] = 0x00;
+      } else {
+        data[TOGGLE_BYTE_INDEX] = 0x01;
+      }
+      bt_le_adv_update_data(ad, ARRAY_SIZE(ad), NULL, 0); // update bt adv
+    }
 
-			if (val >= 0) {
-				gpio_pin_set_dt(&led, val);
-			}
-			k_msleep(SLEEP_TIME_MS);
-		}
-	}
-	return 0;
+    k_msleep(SLEEP_TIME_MS);
+  }
+
+  return 0;
 }
