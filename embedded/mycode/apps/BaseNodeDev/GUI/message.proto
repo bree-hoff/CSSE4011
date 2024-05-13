@@ -1,6 +1,7 @@
 syntax = "proto3";
+import "nanopb.proto";
 
 message Message {
     int32 foo = 1;
+    string temp = 2 [(nanopb).max_length = 5];
 }
-

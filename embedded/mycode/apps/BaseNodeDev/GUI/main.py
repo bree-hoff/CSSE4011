@@ -10,21 +10,23 @@ ser = serial.Serial('/dev/tty.usbmodem0010502125801', 115200)
 def send_number():
     # Create a protobuf message
     message = pb.Message()
-    message.foo = 1023 
+    message.foo = 13456 
+    message.temp = "Hi"
 
     # Serialize the message
     serialized_message = message.SerializeToString()
 
-    length_byte = struct.pack('>B', len(serialized_message))
+    length_byte = len(serialized_message).to_bytes(1, 'big')
+
+    print(length_byte)
 
     ser.write(length_byte)
     
     # Send the serialized message over serial
     ser.write(serialized_message)
 
-    print("Sent number:", message.foo)
-    print(length_byte)
-    print(serialized_message)
+    print("Message Length:", len(serialized_message))
+    print("Message:", serialized_message)
 
 def read_from_serial():
     while True:

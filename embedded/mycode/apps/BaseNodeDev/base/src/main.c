@@ -9,7 +9,7 @@
 #include <pb_decode.h>
 #include "src/message.pb.h"
 
-#define THREAD_DELAY 10
+#define THREAD_DELAY 1
 
 static const struct gpio_dt_spec led0 = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
 
@@ -56,7 +56,8 @@ void uart_rx_cb(const struct device *dev, void *user_data) {
             }
 
             printk("Received foo: %d\n", message.foo);
-            if(message.foo == 1023) {
+            printk("Received temp: %s\n", message.temp);
+            if(message.foo == 29) {
               gpio_pin_toggle_dt(&led0);
               count = 0;
               break;
@@ -66,6 +67,7 @@ void uart_rx_cb(const struct device *dev, void *user_data) {
         }
         count++;
       }
+ 
   }
 }
 
