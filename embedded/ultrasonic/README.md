@@ -14,7 +14,7 @@
     80cm   40cm    0cm
 </pre>
 
-    ## Conditions:
+## Conditions:
 
     x < 40 cm   ---> 1
     x > 80 cm   ---> -1
@@ -24,7 +24,7 @@
     y > 80 cm   ---> -1
     40 < y < 80 ---> 0
 
-    ## Outputs
+## Outputs
 
     Each m5 will send a packet via MQTT to the base node in the format: "a b"
     Where a = x or y, and b = -1, 0, 1.
