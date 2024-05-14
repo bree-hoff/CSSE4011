@@ -22,7 +22,7 @@ def on_message(client, userdata, message):
     userdata.append(message.payload)
     # We only want to process 10 messages
     if len(userdata) >= 10:
-        client.unsubscribe("un46976569")
+        client.unsubscribe("tellusteal")
 
 def on_connect(client, userdata, flags, reason_code, properties):
     if reason_code.is_failure:
@@ -30,7 +30,7 @@ def on_connect(client, userdata, flags, reason_code, properties):
     else:
         # we should always subscribe from on_connect callback to be sure
         # our subscribed is persisted across reconnections.
-        client.subscribe("un46976569")
+        client.subscribe("tellusteal")
 
 mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 mqttc.on_connect = on_connect

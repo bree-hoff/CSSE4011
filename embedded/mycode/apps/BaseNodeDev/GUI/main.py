@@ -43,7 +43,6 @@ button = tk.Button(root, text="Send Number", command=send_number)
 button.pack()
 
 
-
 # Start a separate thread to continuously read from the serial port
 read_thread = threading.Thread(target=read_from_serial)
 read_thread.daemon = True

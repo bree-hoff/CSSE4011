@@ -23,7 +23,11 @@ const char* password    = "q-CLNqxPd3HB";
 const char* mqtt_server = "csse4011-iot.zones.eait.uq.edu.au";
 
 // Prac specific definitions
+<<<<<<< HEAD
 const char* Globaltopic = "tellus-teal";
+=======
+const char* Globaltopic = "tellusteal";
+>>>>>>> 0d62fe99a6c8f80438a73536c8692f22e152f21c
 
 #define TRIG_PIN 33
 #define ECHO_PIN 32
@@ -68,7 +72,17 @@ void loop() {
       prevValidDistance = RangeInCentimeters;
     }
 
-	  delay(100);
+    int yDirection = 0;
+
+    if (RangeInCentimeters <= 40) {
+      yDirection = 1;
+    } else if (RangeInCentimeters >= 70 && RangeInCentimeters < 200) {
+      yDirection = -1;
+    } else {
+      yDirection = 0;
+    }
+
+	  delay(1500);
 
     unsigned long now =
         millis();  // Obtain the host startup duration.
@@ -76,8 +90,8 @@ void loop() {
     if (now - lastMsg > 100) {
         lastMsg = now;
         ++value;
-        snprintf(msg, MSG_BUFFER_SIZE, "y %ld",
-                 RangeInCentimeters);  // Format to the specified string and store it in MSG.
+        snprintf(msg, MSG_BUFFER_SIZE, "y %ld %d",
+                 RangeInCentimeters, yDirection);  // Format to the specified string and store it in MSG.
         M5.Lcd.print("Publish message: ");
         M5.Lcd.println(msg);
 
@@ -92,6 +106,7 @@ void loop() {
 
 void setupWifi() {
     delay(10);
+    M5.Lcd.println(WiFi.macAddress());
     M5.Lcd.printf("Connecting to %s", ssid);
     WiFi.mode(WIFI_STA);  // Set the mode to WiFi station mode.
     WiFi.begin(ssid, password);  // Start Wifi connection. 
@@ -123,9 +138,9 @@ void reConnect() {
         if (client.connect(clientId.c_str())) {
             M5.Lcd.printf("\nSuccess\n");
             // Once connected, publish an announcement to the topic.
-            client.publish(Globaltopic, "hello world");
+            // client.publish(Globaltopic, "hello world");
             // ... and resubscribe.
-            client.subscribe(Globaltopic);
+            // client.subscribe(Globaltopic);
         } else {
             M5.Lcd.print("failed, rc=");
             M5.Lcd.print(client.state());
