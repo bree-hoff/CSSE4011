@@ -32,6 +32,8 @@ def on_connect(client, userdata, flags, reason_code, properties):
         # our subscribed is persisted across reconnections.
         client.subscribe("tellusteal")
 
+
+
 mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 mqttc.on_connect = on_connect
 mqttc.on_message = on_message
@@ -39,6 +41,6 @@ mqttc.on_subscribe = on_subscribe
 mqttc.on_unsubscribe = on_unsubscribe
 
 mqttc.user_data_set([])
-mqttc.connect("csse4011-iot.zones.eait.uq.edu.au")
+mqttc.connect("mqtt.eclipseprojects.io")
 mqttc.loop_forever()
 print(f"Received the following message: {mqttc.user_data_get()}")
