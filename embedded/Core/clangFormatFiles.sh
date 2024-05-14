@@ -3,8 +3,6 @@
 # Shell script to run the clang format tool on all required files
 
 directories=(
-    "mylib"
-    "include"
     "apps/Thingy52/src"
 )
 

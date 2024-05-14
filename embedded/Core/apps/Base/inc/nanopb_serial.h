@@ -12,4 +12,6 @@
 #include <pb_decode.h>
 #include "src/minecraftmessage.pb.h"
 
+extern void init_nanopb(void);
+
 #endif
