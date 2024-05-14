@@ -1,4 +1,10 @@
+import threading
+import queue
+import time
 import paho.mqtt.client as mqtt
+
+currentX = ""
+currentY = ""
 
 def on_subscribe(client, userdata, mid, reason_code_list, properties):
     # Since we subscribed only for a single channel, reason_code_list contains
@@ -17,12 +23,24 @@ def on_unsubscribe(client, userdata, mid, reason_code_list, properties):
         print(f"Broker replied with failure: {reason_code_list[0]}")
     client.disconnect()
 
-def on_message(client, userdata, message):
+def on_message(client, userdata, message, queue):
     # userdata is the structure we choose to provide, here it's a list()
-    userdata.append(message.payload)
-    # We only want to process 10 messages
-    if len(userdata) >= 10:
-        client.unsubscribe("tellusteal")
+
+    decoded_message = message.payload.decode("utf-8")
+
+    userdata.append(decoded_message)
+
+    split_message = decoded_message.split()
+
+    queue.put(split_message)
+
+    if split_message[0] == 'x':
+        currentX = split_message
+
+    if split_message[0] == 'y':
+        currentY = split_message
+
+
 
 def on_connect(client, userdata, flags, reason_code, properties):
     if reason_code.is_failure:
@@ -32,15 +50,22 @@ def on_connect(client, userdata, flags, reason_code, properties):
         # our subscribed is persisted across reconnections.
         client.subscribe("tellusteal")
 
+def read_from_mqtt(queue):
+    mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    mqttc.on_connect = on_connect
+    mqttc.on_message = on_message
+    mqttc.on_subscribe = on_subscribe
+    mqttc.on_unsubscribe = on_unsubscribe
 
+    mqttc.user_data_set([])
+    mqttc.connect("csse4011-iot.zones.eait.uq.edu.au")
+    mqttc.loop_forever()
+    print(f"Received the following message: {mqttc.user_data_get()}")
 
-mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
-mqttc.on_connect = on_connect
-mqttc.on_message = on_message
-mqttc.on_subscribe = on_subscribe
-mqttc.on_unsubscribe = on_unsubscribe
+# Thread function to 
+def get_position():
 
-mqttc.user_data_set([])
-mqttc.connect("mqtt.eclipseprojects.io")
-mqttc.loop_forever()
-print(f"Received the following message: {mqttc.user_data_get()}")
+    while True:     
+        print(f"Current X: {currentX}")
+        print(f"Current Y: {currentY}")
+
