@@ -65,3 +65,6 @@ tools/
 *.vscode
 *.pyc
 DEV-ENV/
+
+#added by other Lewis
+*.cache*

@@ -1,0 +1,30 @@
+syntax = "proto3";
+import "nanopb.proto";
+
+enum MessageType {
+  ULTRASONIC = 1;
+  GESTURE = 2;
+  BOTH = 3; 
+}
+
+enum GestureType {
+  NO_GESTURE = 1;
+  LEFT_CLICK = 2;
+  LOOK_LEFT = 3;
+  LOOK_RIGHT = 4;
+  ONE = 5;
+  TWO = 6;
+  THREE = 7;
+  FOUR = 8;
+  FIVE = 9;
+  JUMP = 10;
+  LOOK_UP = 11;
+  LOOK_DOWN = 12; 
+}
+
+message MinecraftMessage {
+    MessageType message_type = 1;
+    GestureType gesture = 2;
+    int32_t x_ultrasonic = 3; 
+    int32_t y_ultrasonic = 4;
+}
