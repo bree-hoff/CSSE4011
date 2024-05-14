@@ -1,3 +1,5 @@
+import tkinter as tk
+import threading
 import paho.mqtt.client as mqtt
 
 def on_subscribe(client, userdata, mid, reason_code_list, properties):
@@ -19,10 +21,15 @@ def on_unsubscribe(client, userdata, mid, reason_code_list, properties):
 
 def on_message(client, userdata, message):
     # userdata is the structure we choose to provide, here it's a list()
-    userdata.append(message.payload)
-    # We only want to process 10 messages
-    if len(userdata) >= 10:
-        client.unsubscribe("tellusteal")
+
+    decoded_message = message.payload.decode("utf-8")
+
+    userdata.append(decoded_message)
+
+    x = decoded_message.split()
+
+    print(x)
+
 
 def on_connect(client, userdata, flags, reason_code, properties):
     if reason_code.is_failure:
@@ -32,13 +39,30 @@ def on_connect(client, userdata, flags, reason_code, properties):
         # our subscribed is persisted across reconnections.
         client.subscribe("tellusteal")
 
-mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
-mqttc.on_connect = on_connect
-mqttc.on_message = on_message
-mqttc.on_subscribe = on_subscribe
-mqttc.on_unsubscribe = on_unsubscribe
+def read_from_mqtt():
+    mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    mqttc.on_connect = on_connect
+    mqttc.on_message = on_message
+    mqttc.on_subscribe = on_subscribe
+    mqttc.on_unsubscribe = on_unsubscribe
 
-mqttc.user_data_set([])
-mqttc.connect("csse4011-iot.zones.eait.uq.edu.au")
-mqttc.loop_forever()
-print(f"Received the following message: {mqttc.user_data_get()}")
+    mqttc.user_data_set([])
+    mqttc.connect("csse4011-iot.zones.eait.uq.edu.au")
+    mqttc.loop_forever()
+    print(f"Received the following message: {mqttc.user_data_get()}")
+
+
+# Start a separate thread to continuously read from the serial port
+mqtt_thread = threading.Thread(target=read_from_mqtt)
+mqtt_thread.daemon = True
+mqtt_thread.start()
+
+# GUI
+root = tk.Tk()
+root.title("Nanopb Test")
+root.geometry("300x100")
+
+button = tk.Button(root, text="Click Me", command=lambda: print("Button clicked!"))
+button.pack()
+
+root.mainloop()
