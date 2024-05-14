@@ -9,11 +9,13 @@
  */
 
 #include "hid.h"
+#include "nanopb_serial.h"
 
 #define SETUP_SLEEP_TIME_MS 100
 
 int main(void) {
-
+  init_nanopb(); 
+  
   return 0;
 }
 

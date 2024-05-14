@@ -6,7 +6,7 @@
 #include "hid.h"
 
 #define LOG_LEVEL LOG_LEVEL_DBG
-LOG_MODULE_REGISTER(main);
+LOG_MODULE_REGISTER(hid);
 
 #define SW0_NODE DT_ALIAS(sw0)
 
@@ -113,7 +113,7 @@ static inline struct app_evt_t *app_evt_alloc(void)
 	return ev;
 }
 
-void inline app_evt_add_new_command(enum evt_t event_type) {
+void app_evt_add_new_command(enum evt_t event_type) {
     struct app_evt_t *ev2 = app_evt_alloc();
     ev2->event_type = event_type,
     app_evt_put(ev2);

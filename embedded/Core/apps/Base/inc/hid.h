@@ -41,7 +41,7 @@ struct app_evt_t {
 	enum evt_t event_type;
 };
 
-extern void inline app_evt_add_new_command(enum evt_t event_type);
+extern void app_evt_add_new_command(enum evt_t event_type);
 
 extern void clear_mouse_report(void);
 
