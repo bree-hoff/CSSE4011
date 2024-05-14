@@ -2,6 +2,9 @@ import tkinter as tk
 import threading
 import paho.mqtt.client as mqtt
 
+currentX = 0
+currentY = 0
+
 def on_subscribe(client, userdata, mid, reason_code_list, properties):
     # Since we subscribed only for a single channel, reason_code_list contains
     # a single entry
@@ -26,9 +29,16 @@ def on_message(client, userdata, message):
 
     userdata.append(decoded_message)
 
-    x = decoded_message.split()
+    split_message = decoded_message.split()
 
-    print(x)
+    #print(split_message[0])
+
+    if split_message[0] == 'x':
+        currentX = split_message[2]
+
+    if split_message[0] == 'y':
+        currentY = split_message[2]
+
 
 
 def on_connect(client, userdata, flags, reason_code, properties):
@@ -52,10 +62,22 @@ def read_from_mqtt():
     print(f"Received the following message: {mqttc.user_data_get()}")
 
 
-# Start a separate thread to continuously read from the serial port
+def print_global():
+
+    while True:     
+        print(f"Current X: {currentX}")
+        print(f"Current Y: {currentY}")
+
+
+# Start a separate thread to continuously read from the mqtt port
 mqtt_thread = threading.Thread(target=read_from_mqtt)
 mqtt_thread.daemon = True
 mqtt_thread.start()
+
+# Start a separate thread to continuously print global variable
+print_thread = threading.Thread(target=print_global)
+print_thread.daemon = True
+print_thread.start()
 
 # GUI
 root = tk.Tk()
