@@ -7,7 +7,7 @@
 #include <zephyr/sys/byteorder.h>
 #include <pb_encode.h>
 #include <pb_decode.h>
-#include "src/message.pb.h"
+#include "src/minecraftmessage.pb.h"
 
 #define THREAD_DELAY 1
 
@@ -33,39 +33,41 @@ void uart_rx_cb(const struct device *dev, void *user_data) {
 
     while (uart_fifo_read(uart, &c, 1) == 1) {
 
-      printk("Got %c\n",c);
+      printk("Got %c at count %d\n",c, count);    
 
       if(count == 0) {
         rx_index = c;
+        printk("rx index: %d\n",rx_index); 
         count++;
 
       } else {
+        
     
         rx_buffer[count - 1] = c;
 
-          
-        if (rx_index == count) {
+        count++;
+       
+   
+        if (rx_index == (count - 1)) {
             
-            Message message = Message_init_zero;
+            MinecraftMessage message = MinecraftMessage_init_zero;
             pb_istream_t istream = pb_istream_from_buffer(rx_buffer, rx_index);
-            if (!pb_decode(&istream, Message_fields, &message)) {
+            if (!pb_decode(&istream, MinecraftMessage_fields, &message)) {
                 printk("Error decoding message\n");
         
                 count = 0;
                 break;
             }
 
-            printk("Received foo: %d\n", message.foo);
-            printk("Received temp: %s\n", message.temp);
-            if(message.foo == 29) {
-              gpio_pin_toggle_dt(&led0);
-              count = 0;
-              break;
-
-            }  
+            printk("Message Type: %d\n", message.message_type);
+            printk("Gesture: %d\n", message.gesture);
+            printk("X Ultrasonic: %d\n", message.x_ultrasonic);
+            printk("Y Ultrasonic: %d\n", message.y_ultrasonic);
+            count = 0;
             
         }
-        count++;
+       
+        
       }
  
   }

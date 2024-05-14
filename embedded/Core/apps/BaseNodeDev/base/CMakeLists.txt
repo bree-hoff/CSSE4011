@@ -9,7 +9,7 @@ project(base)
 list(APPEND CMAKE_MODULE_PATH ${ZEPHYR_BASE}/modules/nanopb)
 include(nanopb)
 
-zephyr_nanopb_sources(app src/message.proto)
+zephyr_nanopb_sources(app src/minecraftmessage.proto)
 
 FILE(GLOB app_sources src/*.c)
 target_sources(app PRIVATE ${app_sources})

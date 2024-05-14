@@ -1,29 +1,35 @@
 import tkinter as tk
 import serial
 import time
-import message_pb2 as pb  
+from minecraftmessage_pb2 import MinecraftMessage, MessageType, GestureType
 import threading
 import struct
+import time
 
 ser = serial.Serial('/dev/tty.usbmodem0010502125801', 115200)  
 
 def send_number():
     # Create a protobuf message
-    message = pb.Message()
-    message.foo = 13456 
-    message.temp = "Hi"
+    message = MinecraftMessage()
+    message.message_type = MessageType.BOTH
+    message.gesture = GestureType.JUMP
+    message.x_ultrasonic = 150
+    message.y_ultrasonic = 300
 
     # Serialize the message
     serialized_message = message.SerializeToString()
 
     length_byte = len(serialized_message).to_bytes(1, 'big')
 
-    print(length_byte)
+    # print(length_byte)
 
     ser.write(length_byte)
     
     # Send the serialized message over serial
-    ser.write(serialized_message)
+    # ser.write(serialized_message)
+    for byte in serialized_message:
+            ser.write(byte.to_bytes(1, 'big'))
+            time.sleep(0.01)
 
     print("Message Length:", len(serialized_message))
     print("Message:", serialized_message)
@@ -41,6 +47,7 @@ root.geometry("300x100")
 
 button = tk.Button(root, text="Send Number", command=send_number)
 button.pack()
+
 
 
 # Start a separate thread to continuously read from the serial port
