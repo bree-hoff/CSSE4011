@@ -62,7 +62,7 @@ void loop() {
 
 	  RangeInCentimeters = ultrasonic.read();
     
-    if (RangeInCentimeters > 700) {
+    if (RangeInCentimeters == 700) {
       RangeInCentimeters = prevValidDistance;
     } else {
       prevValidDistance = RangeInCentimeters;
