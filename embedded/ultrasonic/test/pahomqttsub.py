@@ -23,7 +23,7 @@ def on_unsubscribe(client, userdata, mid, reason_code_list, properties):
         print(f"Broker replied with failure: {reason_code_list[0]}")
     client.disconnect()
 
-def on_message(client, userdata, message, queue):
+def on_message(client, userdata, message):
     # userdata is the structure we choose to provide, here it's a list()
 
     decoded_message = message.payload.decode("utf-8")
@@ -31,8 +31,6 @@ def on_message(client, userdata, message, queue):
     userdata.append(decoded_message)
 
     split_message = decoded_message.split()
-
-    queue.put(split_message)
 
     if split_message[0] == 'x':
         currentX = split_message
@@ -50,7 +48,7 @@ def on_connect(client, userdata, flags, reason_code, properties):
         # our subscribed is persisted across reconnections.
         client.subscribe("tellusteal")
 
-def read_from_mqtt(queue):
+def read_from_mqtt():
     mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
     mqttc.on_connect = on_connect
     mqttc.on_message = on_message
@@ -63,9 +61,9 @@ def read_from_mqtt(queue):
     print(f"Received the following message: {mqttc.user_data_get()}")
 
 # Thread function to 
-def get_position():
+# def get_position():
 
-    while True:     
-        print(f"Current X: {currentX}")
-        print(f"Current Y: {currentY}")
+#     while True:     
+#         print(f"Current X: {currentX}")
+#         print(f"Current Y: {currentY}")
 
