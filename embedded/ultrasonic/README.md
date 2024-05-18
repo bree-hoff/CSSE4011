@@ -32,6 +32,11 @@
     -1 = backward along the respective axis
     0 = stationary along the respective axis
     1 = forward along the respective axis
+
+## MQTT
+
+IP Address for mosquitto connection: 	
+10.180.153.18
     
 
 

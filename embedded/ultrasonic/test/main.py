@@ -1,27 +1,91 @@
 import tkinter as tk
 import threading
-import queue
 import time
+import queue
+import paho.mqtt.client as mqtt
 
-from pahomqttsub import read_from_mqtt
+currentX = ""
+currentY = ""
 
-def get_position(queue):
+def on_subscribe(client, userdata, mid, reason_code_list, properties):
+    # Since we subscribed only for a single channel, reason_code_list contains
+    # a single entry
+    if reason_code_list[0].is_failure:
+        print(f"Broker rejected you subscription: {reason_code_list[0]}")
+    else:
+        print(f"Broker granted the following QoS: {reason_code_list[0].value}")
+
+def on_unsubscribe(client, userdata, mid, reason_code_list, properties):
+    # Be careful, the reason_code_list is only present in MQTTv5.
+    # In MQTTv3 it will always be empty
+    if len(reason_code_list) == 0 or not reason_code_list[0].is_failure:
+        print("unsubscribe succeeded (if SUBACK is received in MQTTv3 it success)")
+    else:
+        print(f"Broker replied with failure: {reason_code_list[0]}")
+    client.disconnect()
+
+def on_message(client, userdata, message):
+    # userdata is the structure we choose to provide, here it's a list()
+
+    decoded_message = message.payload.decode("utf-8")
+
+    userdata.append(decoded_message)
+
+    split_message = decoded_message.split()
+
+    if split_message[0] == 'x':
+        currentX = split_message
+        shared_queue.put(currentX)
+
+    if split_message[0] == 'y':
+        currentY = split_message
+        shared_queue.put(currentY)
+
+
+
+def on_connect(client, userdata, flags, reason_code, properties):
+    if reason_code.is_failure:
+        print(f"Failed to connect: {reason_code}. loop_forever() will retry connection")
+    else:
+        # we should always subscribe from on_connect callback to be sure
+        # our subscribed is persisted across reconnections.
+        client.subscribe("tellusteal")
+
+def read_from_mqtt():
+    mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    mqttc.on_connect = on_connect
+    mqttc.on_message = on_message
+    mqttc.on_subscribe = on_subscribe
+    mqttc.on_unsubscribe = on_unsubscribe
+
+    mqttc.user_data_set([])
+    mqttc.connect("csse4011-iot.zones.eait.uq.edu.au")
+    mqttc.loop_forever()
+    print(f"Received the following message: {mqttc.user_data_get()}")
+
+
+def get_position():
 
     while True:
-        rx_data = queue.get()
 
-        print(f"Received from thread: {rx_data}")
+        data = shared_queue.get()
 
-        time.sleep(1)
+        print(f"Received from thread : {data}")
 
-# Start a separate thread to continuously read from the mqtt port
-queue = queue.Queue()
-mqtt_thread = threading.Thread(target=get_position, args=(queue,))
-rx_thread = threading.Thread(target=read_from_mqtt, args=(queue,))
+
+
+shared_queue = queue.Queue()
+
+# Start a threads
+mqtt_thread = threading.Thread(target=read_from_mqtt)
+main_thread = threading.Thread(target=get_position)
+
 mqtt_thread.daemon = True
-rx_thread.daemon = True
+main_thread.daemon = True
+
 mqtt_thread.start()
-rx_thread.start()
+main_thread.start()
+
 
 # GUI
 root = tk.Tk()

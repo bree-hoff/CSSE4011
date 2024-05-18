@@ -21,12 +21,10 @@ def send_number():
 
     length_byte = len(serialized_message).to_bytes(1, 'big')
 
-    # print(length_byte)
-
     ser.write(length_byte)
     
     # Send the serialized message over serial
-    # ser.write(serialized_message)
+
     for byte in serialized_message:
             ser.write(byte.to_bytes(1, 'big'))
             time.sleep(0.01)
@@ -58,3 +56,26 @@ read_thread.start()
 root.mainloop()
 
 ser.close()
+
+
+## NEW FUNCTION
+def send_number(message_type, gesture, x_ultrasonic, y_ultrasonic):
+   
+    message = MinecraftMessage()
+    message.message_type = message_type
+    message.gesture = gesture
+    message.x_ultrasonic = x_ultrasonic
+    message.y_ultrasonic = y_ultrasonic
+
+    serialized_message = message.SerializeToString()
+
+    length_byte = len(serialized_message).to_bytes(1, 'big')
+
+    ser.write(length_byte)
+    
+    for byte in serialized_message:
+        ser.write(byte.to_bytes(1, 'big'))
+        time.sleep(0.01)
+
+    print("Message Length:", len(serialized_message))
+    print("Message:", serialized_message)

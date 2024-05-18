@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+enum MessageType {
+  ULTRASONIC = 0;
+  GESTURE = 1;
+  BOTH = 2; 
+}
+
+enum GestureType {
+  NO_GESTURE = 0;
+  LEFT_CLICK = 1;
+  LOOK_LEFT = 2;
+  LOOK_RIGHT = 3;
+  ONE = 4;
+  TWO = 5;
+  THREE = 6;
+  FOUR = 7;
+  FIVE = 8;
+  JUMP = 9;
+  LOOK_UP = 10;
+  LOOK_DOWN = 11; 
+}
+
+message MinecraftMessage {
+    MessageType message_type = 1;
+    GestureType gesture = 2;
+    int32 x_ultrasonic = 3; 
+    int32 y_ultrasonic = 4;
+}
