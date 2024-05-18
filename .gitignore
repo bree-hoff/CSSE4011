@@ -64,3 +64,8 @@ tools/
 *.bkp
 *.vscode
 *.pyc
+DEV-ENV/
+RADAR-ENV/
+
+#added by other Lewis
+*.cache*

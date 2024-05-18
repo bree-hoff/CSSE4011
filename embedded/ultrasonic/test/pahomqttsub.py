@@ -1,4 +1,10 @@
+import threading
+import queue
+import time
 import paho.mqtt.client as mqtt
+
+currentX = ""
+currentY = ""
 
 def on_subscribe(client, userdata, mid, reason_code_list, properties):
     # Since we subscribed only for a single channel, reason_code_list contains
@@ -19,10 +25,20 @@ def on_unsubscribe(client, userdata, mid, reason_code_list, properties):
 
 def on_message(client, userdata, message):
     # userdata is the structure we choose to provide, here it's a list()
-    userdata.append(message.payload)
-    # We only want to process 10 messages
-    if len(userdata) >= 10:
-        client.unsubscribe("tellusteal")
+
+    decoded_message = message.payload.decode("utf-8")
+
+    userdata.append(decoded_message)
+
+    split_message = decoded_message.split()
+
+    if split_message[0] == 'x':
+        currentX = split_message
+
+    if split_message[0] == 'y':
+        currentY = split_message
+
+
 
 def on_connect(client, userdata, flags, reason_code, properties):
     if reason_code.is_failure:
@@ -32,13 +48,22 @@ def on_connect(client, userdata, flags, reason_code, properties):
         # our subscribed is persisted across reconnections.
         client.subscribe("tellusteal")
 
-mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
-mqttc.on_connect = on_connect
-mqttc.on_message = on_message
-mqttc.on_subscribe = on_subscribe
-mqttc.on_unsubscribe = on_unsubscribe
+def read_from_mqtt():
+    mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    mqttc.on_connect = on_connect
+    mqttc.on_message = on_message
+    mqttc.on_subscribe = on_subscribe
+    mqttc.on_unsubscribe = on_unsubscribe
 
-mqttc.user_data_set([])
-mqttc.connect("csse4011-iot.zones.eait.uq.edu.au")
-mqttc.loop_forever()
-print(f"Received the following message: {mqttc.user_data_get()}")
+    mqttc.user_data_set([])
+    mqttc.connect("csse4011-iot.zones.eait.uq.edu.au")
+    mqttc.loop_forever()
+    print(f"Received the following message: {mqttc.user_data_get()}")
+
+# Thread function to 
+# def get_position():
+
+#     while True:     
+#         print(f"Current X: {currentX}")
+#         print(f"Current Y: {currentY}")
+

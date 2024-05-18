@@ -19,11 +19,11 @@ PubSubClient client(espClient);
 // Configure the name and password of the connected wifi and your MQTT Serve
 // host.
 const char* ssid        = "infrastructure";
-const char* password    = "q-CLNqxPd3HB";
+const char* password    = "jEizUMsPiTD8";
 const char* mqtt_server = "csse4011-iot.zones.eait.uq.edu.au";
 
 // Prac specific definitions
-const char* Globaltopic = "tellus-teal";
+const char* Globaltopic = "tellusteal";
 
 #define TRIG_PIN 33
 #define ECHO_PIN 32
@@ -62,13 +62,23 @@ void loop() {
 
 	  RangeInCentimeters = ultrasonic.read();
     
-    if (RangeInCentimeters == 714) {
+    if (RangeInCentimeters == 700) {
       RangeInCentimeters = prevValidDistance;
     } else {
       prevValidDistance = RangeInCentimeters;
     }
 
-	  delay(100);
+    int xDirection = 0;
+
+    if (RangeInCentimeters <= 40) {
+      xDirection = 1;
+    } else if (RangeInCentimeters >= 70 && RangeInCentimeters < 200) {
+      xDirection = -1;
+    } else {
+      xDirection = 0;
+    }
+
+	  delay(200);
 
     unsigned long now =
         millis();  // Obtain the host startup duration.
@@ -76,12 +86,15 @@ void loop() {
     if (now - lastMsg > 100) {
         lastMsg = now;
         ++value;
-        snprintf(msg, MSG_BUFFER_SIZE, "x %ld",
-                 RangeInCentimeters);  // Format to the specified string and store it in MSG.
+        snprintf(msg, MSG_BUFFER_SIZE, "x %ld %d",
+                 RangeInCentimeters, xDirection);  // Format to the specified string and store it in MSG.
         M5.Lcd.print("Publish message: ");
         M5.Lcd.println(msg);
 
-        client.publish(Globaltopic, msg);  // Publishes a message to the specified topic.
+        if (RangeInCentimeters < 700) {
+          client.publish(Globaltopic, msg);  // Publishes a message to the specified topic.
+        }
+
         if (value % 12 == 0) {
             M5.Lcd.clear();
             M5.Lcd.setCursor(0, 0);
@@ -123,9 +136,9 @@ void reConnect() {
         if (client.connect(clientId.c_str())) {
             M5.Lcd.printf("\nSuccess\n");
             // Once connected, publish an announcement to the topic.
-            client.publish(Globaltopic, "hello world");
+            //client.publish(Globaltopic, "hello world");
             // ... and resubscribe.
-            client.subscribe(Globaltopic);
+            //client.subscribe(Globaltopic);
         } else {
             M5.Lcd.print("failed, rc=");
             M5.Lcd.print(client.state());
