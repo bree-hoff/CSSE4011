@@ -11,10 +11,10 @@ ser = serial.Serial('/dev/tty.usbmodem0010502125801', 115200)
 def serial_send():
     # Create a protobuf message
     message = MinecraftMessage()
-    message.message_type = MessageType.BOTH
-    message.gesture = GestureType.JUMP
-    message.x_ultrasonic = 150
-    message.y_ultrasonic = 300
+    message.message_type = MessageType.ULTRASONIC
+    message.gesture = GestureType.NO_GESTURE
+    message.x_ultrasonic = 0
+    message.y_ultrasonic = 1
 
     # Serialize the message
     serialized_message = message.SerializeToString()

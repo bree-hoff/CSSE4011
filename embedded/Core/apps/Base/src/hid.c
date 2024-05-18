@@ -138,6 +138,8 @@ void clear_mouse_report(void)
 	new_evt->event_type = MOUSE_CLEAR;
 	app_evt_put(new_evt);
 	k_sem_give(&evt_sem);
+
+	printk("Clearing mouse");
 }
 
 void clear_kbd_report(void)
@@ -147,6 +149,8 @@ void clear_kbd_report(void)
 	new_evt->event_type = KBD_CLEAR;
 	app_evt_put(new_evt);
 	k_sem_give(&evt_sem);
+
+	printk("Clearing keyboard");
 }
 
 static int ascii_to_hid(uint8_t ascii)
@@ -350,6 +354,7 @@ static void status_cb(enum usb_dc_status_code status, const uint8_t *param)
 }
 
 static void transmit_key(char character) {
+	printk("Sending |%c|\n", character);
     int ch = ascii_to_hid(character);
 
     if (ch == -1) {

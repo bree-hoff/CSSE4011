@@ -73,19 +73,25 @@ void interpret_gesture(GestureType gesture) {
 
 void interpret_position(int32_t x, int32_t y) {
   enum evt_t event;
-  if (y == -1) {
+  if (y == 1) {
+    printk("Got backward");
     event = KBD_BACKWARD;
-  } else if (y == 1) {
+  } else if (y == 3) {
+    printk("Got forward");
     event = KBD_FORWARD;
-  } else if (x == -1) {
-    event = KBD_LEFT;
   } else if (x == 1) {
+    printk("Got left");
+    event = KBD_LEFT;
+  } else if (x == 3) {
+    printk("Got right");
     event = KBD_RIGHT;
   } else {
+    printk("Got centre");
     event = KBD_CLEAR;
   }
 
   if (event != executing_movement_event) {
+    printk("New command, clearing");
     clear_kbd_report();
     app_evt_add_new_command(event);
     executing_movement_event = event;
@@ -119,7 +125,6 @@ void uart_rx_cb(const struct device *dev, void *user_data) {
     }
 
     while (uart_fifo_read(uart, &c, 1) == 1) {   
-
       if(count == 0) {
         rx_index = c;
         count++;
@@ -145,10 +150,10 @@ void uart_rx_cb(const struct device *dev, void *user_data) {
 
             interpret_message(message);
 
-            // printk("Message Type: %d\n", message.message_type);
-            // printk("Gesture: %d\n", message.gesture);
-            // printk("X Ultrasonic: %d\n", message.x_ultrasonic);
-            // printk("Y Ultrasonic: %d\n", message.y_ultrasonic);
+            printk("Message Type: %d\n", message.message_type);
+            printk("Gesture: %d\n", message.gesture);
+            printk("X Ultrasonic: %d\n", message.x_ultrasonic);
+            printk("Y Ultrasonic: %d\n", message.y_ultrasonic);
             count = 0;
             
         }

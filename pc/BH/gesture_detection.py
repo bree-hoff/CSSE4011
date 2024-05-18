@@ -5,15 +5,15 @@ import cv2
 import mediapipe as mp
 from fastai.data.all import *
 from fastai.vision.all import *
-import cv2
 from collections import defaultdict
-import serial as sl
+import serial_send as sl
 from minecraftmessage_pb2 import MinecraftMessage, MessageType, GestureType
 
 mp_hands = mp.solutions.hands.Hands()
-
+last_gesture = 'relaxed'
 
 types = ['call', 'dislike','fist','four','like','mute','ok','one','palm','peace', 'peace_inverted', 'rock', 'stop', 'stop_inverted', 'three', 'three2', 'two_up', 'two_up_inverted', 'relaxed']
+
 
 class RecentGestures:
     def __init__(self):
@@ -21,7 +21,7 @@ class RecentGestures:
         self.gesture_counts = defaultdict(int)
 
     def add_gesture(self, new_gesture):
-        if len(self.gestures) >= 10:
+        if len(self.gestures) >= 5:
             eleventh_gesture = self.gestures.pop(0)
             self.gesture_counts[eleventh_gesture] -= 1
             if self.gesture_counts[eleventh_gesture] == 0:
@@ -41,9 +41,6 @@ Predict the gesture from the frame containing a hand that is passed in.
 '''
 def get_prediction(frame, learn):
     im_type,what,probs = learn.predict(frame)
-    print(im_type)
-    print(probs)
-    print(what)
     return im_type
 
 
@@ -111,9 +108,10 @@ gesture_to_movement_map = {
 Process video frame by frame to detect gesture
 '''
 def process_video(ser, gesture_q, gesture_label, filtered_label, detected_label):
+    global last_gesture
     gesture_tracker = RecentGestures()
-    cap = cv2.VideoCapture(0)
-    path_to_export = '/Users/brianna/Documents/2024/Semester 1/CSSE4011/Project/project_repo/CSSE4011/pc/different_export.pkl'
+    cap = cv2.VideoCapture(1)
+    path_to_export = '/Users/lewisluck/csse4011/project_shared/CSSE4011/pc/BH/different_export.pkl'
     learn = load_learner(path_to_export, cpu=False)
     detection_type = None
     while True: 
@@ -127,8 +125,12 @@ def process_video(ser, gesture_q, gesture_label, filtered_label, detected_label)
             filtered_label.configure(text = "Filtered Gesture: " + top_gesture) #detection_type
             detected_label.configure(text = "Detected Hand: True")
             movement_type = gesture_to_movement_map.get(top_gesture, GestureType.NO_GESTURE)
-            sl.serial_send(ser, MessageType.GESTURE, gesture_type, 0, 0)
+
+            if last_gesture != top_gesture:
+                sl.serial_send(ser, MessageType.GESTURE, movement_type, 0, 0)
+                last_gesture = top_gesture
             # gesture_q.put(detection_type)
+            
             detection_type = None
         else:
             detected_label.configure(text = "Detected Hand: False")

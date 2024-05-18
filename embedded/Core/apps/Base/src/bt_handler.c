@@ -83,4 +83,4 @@ void ble_thread(void) {
 
 }
 
-K_THREAD_DEFINE(ble, 2048, ble_thread, NULL, NULL, NULL, 10, 0, 0);
+K_THREAD_DEFINE(ble, 2048, ble_thread, NULL, NULL, NULL, 1, 0, 0);

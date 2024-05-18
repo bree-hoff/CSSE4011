@@ -8,10 +8,13 @@ import serial_send as sl
 import serial
 from minecraftmessage_pb2 import MinecraftMessage, MessageType, GestureType
 
-MQTT_active = 1
+MQTT_active = 0
 CAM_active = 1
 BLE_active = 1
 rx_msg = ""
+
+
+last_send_time = 0
 
 if BLE_active:
     ser = serial.Serial('/dev/tty.usbmodem0010502125801', 115200)
@@ -58,7 +61,6 @@ def on_message(client, userdata, message):
     try:
         rx_msg = message.payload.decode("utf-8")
         client.user_data_set(rx_msg)
-        # print(rx_msg)
     except:
         print("message receive error")
 
@@ -70,6 +72,7 @@ def on_connect(client, userdata, flags, reason_code, properties):
     client.subscribe("tellusteal")
     
 def handle_mqtt_data(ser, mqtt_q, x_label, y_label, tracker, canvas):
+    global last_send_time
     current_positions = CurrentPositions()
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
     client.on_connect = on_connect
@@ -92,6 +95,7 @@ def handle_mqtt_data(ser, mqtt_q, x_label, y_label, tracker, canvas):
             # # print(client.user_data_get())
             # data = self.client.user_data_get()
             data_list = data.split()
+            prev_coords = current_positions.get_coords()
             if data_list[0] == "x":
                 x_label.configure(text = "X: " + str(data_list[1]))
                 current_positions.add_x_raw(float(data_list[1]))
@@ -118,24 +122,27 @@ def handle_mqtt_data(ser, mqtt_q, x_label, y_label, tracker, canvas):
                 case (1, 0): 
                     x = 82
                     y = 50
-                # case (1, 1):
-                #     x = 82
-                #     y = 17
-                # case (-1, -1):
-                #     x = 17
-                #     y = 82
-                # case (-1, 1):
-                #     x = 17
-                #     y = 17
-                # case (1, -1):
-                #     x = 82
-                #     y = 82
+                case (1, 1):
+                    x = 82
+                    y = 17
+                case (-1, -1):
+                    x = 17
+                    y = 82
+                case (-1, 1):
+                    x = 17
+                    y = 17
+                case (1, -1):
+                    x = 82
+                    y = 82
                 case default:
                     x = 50
                     y = 50
             
             coords = current_positions.get_coords()
-            sl.serial_send(ser, MessageType.ULTRASONIC, GestureType.NO_GESTURE, coords[0], coords[1])
+            
+            if coords != prev_coords and time.time() > last_send_time + 0.5:
+                last_send_time = time.time()
+                sl.serial_send(ser, MessageType.ULTRASONIC, GestureType.NO_GESTURE, coords[0], coords[1])
             old_coords = canvas.coords(tracker)
             old_loc_x = old_coords[0] + 5
             old_loc_y = old_coords[1] + 5
