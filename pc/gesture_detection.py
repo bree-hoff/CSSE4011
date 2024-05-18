@@ -7,20 +7,28 @@ from fastai.data.all import *
 from fastai.vision.all import *
 import cv2
 
+mp_hands = mp.solutions.hands.Hands()
+
+
+types = 'call', 'dislike','fist','four','like','mute','ok','one','palm','peace', 'peace_inverted', 'rock', 'stop', 'stop_inverted', 'three', 'three2', 'two_up', 'two_up_inverted', 'relaxed'
+
+
+
 '''
 Predict the gesture from the frame containing a hand that is passed in.
 '''
-def get_prediction(frame):
-    im_type,_,probs = learn.predict(frame)
-    if im_type == "one":
-        im_type = "um actually"
+def get_prediction(frame, learn):
+    im_type,what,probs = learn.predict(frame)
+    print(im_type)
+    print(probs)
+    print(what)
     return im_type
 
 
 '''
 Get bounding box of hand
 '''
-def find_hand(frame):
+def find_hand(frame, learn):
     
     # Detect hands in frame
     processed_frame = mp_hands.process(frame)
@@ -49,33 +57,39 @@ def find_hand(frame):
             x2 = x_centre + side // 2
             y2 = y_centre + side // 2
             
-            # Show the square on video
-            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            # # Show the square on video
+            # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
             detection_frame = frame_cpy[(y1):(y2), (x1):(x2)]
-            detected_value = get_prediction(detection_frame)
+            detected_value = get_prediction(detection_frame, learn)
             
             # Show the string on video
             vid_detection_str = f"This is a: {detected_value}"
-            cv2.putText(frame, vid_detection_str, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA) 
+            # cv2.putText(frame, vid_detection_str, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA) 
             return detected_value
 
     return None
 
-mp_hands = mp.solutions.hands.Hands()
-path_to_export = '/Users/brianna/Documents/2024/Semester 1/CSSE4011/Project/project_repo/CSSE4011/pc/trained_export.pkl'
-learn = load_learner(path_to_export, cpu=False)
-cap = cv2.VideoCapture(0)
-    
+
+
 '''
 Process video frame by frame to detect gesture
 '''
-while True: 
-    ret,img=cap.read()
-    detection_type = find_hand(img)
-    if detection_type:
-        print("send this detection_type variable to dashboard")
-    cv2.imshow('Video', img)
-    if(cv2.waitKey(10) & 0xFF == ord('b')):
-        break
+def process_video(gesture_q, gesture_label):
+    cap = cv2.VideoCapture(0)
+    path_to_export = '/Users/brianna/Documents/2024/Semester 1/CSSE4011/Project/project_repo/CSSE4011/pc/different_export.pkl'
+    learn = load_learner(path_to_export, cpu=False)
+    detection_type = None
+    while True: 
+        ret,img=cap.read()
+        detection_type = find_hand(img, learn)
+        if detection_type is not None:
+            # print(detection_type)
+            gesture_label.configure(text = "Detected Gesture: " + detection_type)
+            # gesture_q.put(detection_type)
+            detection_type = None
     
+    # print("send this detection_type variable to dashboard")
+    # cv2.imshow('Video', img)
+    # if(cv2.waitKey(10) & 0xFF == ord('b')):
+    #     break
     
