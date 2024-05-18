@@ -76,7 +76,7 @@ void ble_thread(void) {
 
       app_evt_add_new_command(MOUSE_RIGHT);
       clear_mouse_report();
-      printk("PB Pressed\n");
+      printk("1\n");
       k_event_clear(&pbEvent, PB_EVENT_BIT);
     }
   }

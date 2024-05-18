@@ -1,13 +1,28 @@
 #include "nanopb_serial.h"
 #include "hid.h"
 #include "src/minecraftmessage.pb.h"
+#include <zephyr/sys_clock.h>
 
 #define THREAD_DELAY 1
 
 LOG_MODULE_REGISTER(nanopb);
 static const struct gpio_dt_spec led0 = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
-
 static const struct device *const uart = DEVICE_DT_GET(DT_NODELABEL(uart0));
+
+int64_t last_movement_time = 0;
+
+static enum evt_t executing_movement_event = KBD_CLEAR;
+static enum evt_t executing_look_event = MOUSE_CLEAR;
+
+void look_gesture(enum evt_t event) {
+  int64_t time = sys_clock_tick_get();
+  if (event != executing_look_event || time > last_movement_time) {
+    last_movement_time = time;
+    app_evt_add_new_command(event);
+    executing_look_event = event;
+    clear_mouse_report();
+  }
+}
 
 void interpret_gesture(GestureType gesture) {
   switch (gesture) {
@@ -15,10 +30,10 @@ void interpret_gesture(GestureType gesture) {
       app_evt_add_new_command(MOUSE_LEFT_CLICK);
       break;
     case GestureType_LOOK_LEFT:
-      app_evt_add_new_command(MOUSE_LEFT);
+      look_gesture(MOUSE_LEFT);
       break;
     case GestureType_LOOK_RIGHT:
-      app_evt_add_new_command(MOUSE_RIGHT);
+      look_gesture(MOUSE_RIGHT);
       break;
     case GestureType_ONE:
       app_evt_add_new_command(KBD_ONE);
@@ -42,12 +57,13 @@ void interpret_gesture(GestureType gesture) {
       break;
     case GestureType_JUMP:
       app_evt_add_new_command(KBD_SPACE);
+      clear_kbd_report();
       break;
     case GestureType_LOOK_UP:
-      app_evt_add_new_command(MOUSE_UP);
+      look_gesture(MOUSE_UP);
       break;
     case GestureType_LOOK_DOWN:
-      app_evt_add_new_command(MOUSE_RIGHT);
+      look_gesture(MOUSE_DOWN);
       break;
     default:
       clear_kbd_report();
@@ -56,16 +72,23 @@ void interpret_gesture(GestureType gesture) {
 }
 
 void interpret_position(int32_t x, int32_t y) {
+  enum evt_t event;
   if (y == -1) {
-    app_evt_add_new_command(KBD_BACKWARD);
+    event = KBD_BACKWARD;
   } else if (y == 1) {
-    app_evt_add_new_command(KBD_FORWARD);
+    event = KBD_FORWARD;
   } else if (x == -1) {
-    app_evt_add_new_command(KBD_LEFT);
+    event = KBD_LEFT;
   } else if (x == 1) {
-    app_evt_add_new_command(KBD_RIGHT);
+    event = KBD_RIGHT;
   } else {
+    event = KBD_CLEAR;
+  }
+
+  if (event != executing_movement_event) {
     clear_kbd_report();
+    app_evt_add_new_command(event);
+    executing_movement_event = event;
   }
 }
 
