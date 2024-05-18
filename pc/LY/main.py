@@ -8,7 +8,7 @@ import time
 
 ser = serial.Serial('/dev/tty.usbmodem0010502125801', 115200)  
 
-def send_number():
+def serial_send():
     # Create a protobuf message
     message = MinecraftMessage()
     message.message_type = MessageType.BOTH
@@ -36,6 +36,11 @@ def read_from_serial():
     while True:
         data = ser.readline() 
         print("Received:", data)
+        if data == b'\x30\r\n':
+            print("Push Button!!")
+        else:
+            print("Unknown byte:", data)
+
 
 
 # GUI
@@ -43,7 +48,7 @@ root = tk.Tk()
 root.title("Nanopb Test")
 root.geometry("300x100")
 
-button = tk.Button(root, text="Send Number", command=send_number)
+button = tk.Button(root, text="Send Number", command=serial_send)
 button.pack()
 
 
@@ -58,8 +63,8 @@ root.mainloop()
 ser.close()
 
 
-## NEW FUNCTION
-def send_number(message_type, gesture, x_ultrasonic, y_ultrasonic):
+## NEW FUNCTION  !!!
+def serial_send(message_type, gesture, x_ultrasonic, y_ultrasonic):
    
     message = MinecraftMessage()
     message.message_type = message_type
