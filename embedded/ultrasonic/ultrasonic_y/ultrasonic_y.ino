@@ -70,9 +70,9 @@ void loop() {
 
     int yDirection = 0;
 
-    if (RangeInCentimeters <= 40) {
+    if (RangeInCentimeters <= 25) {
       yDirection = 1;
-    } else if (RangeInCentimeters >= 70 && RangeInCentimeters < 200) {
+    } else if (RangeInCentimeters >= 60 && RangeInCentimeters < 140) {
       yDirection = -1;
     } else {
       yDirection = 0;
@@ -83,15 +83,15 @@ void loop() {
     unsigned long now =
         millis();  // Obtain the host startup duration.
 
-    if (now - lastMsg > 100) {
+    if (now - lastMsg > 200) {
         lastMsg = now;
         ++value;
         snprintf(msg, MSG_BUFFER_SIZE, "y %ld %d",
                  RangeInCentimeters, yDirection);  // Format to the specified string and store it in MSG.
-        M5.Lcd.print("Publish message: ");
-        M5.Lcd.println(msg);
 
-        if (RangeInCentimeters < 700) {
+        if (RangeInCentimeters < 140) {
+          M5.Lcd.print("Publish message: ");
+          M5.Lcd.println(msg);
           client.publish(Globaltopic, msg);  // Publishes a message to the specified topic.
         }
         
