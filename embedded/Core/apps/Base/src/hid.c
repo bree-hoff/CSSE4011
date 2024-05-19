@@ -47,7 +47,7 @@ K_HEAP_DEFINE(event_elem_pool, FIFO_ELEM_MAX_SZ * FIFO_ELEM_COUNT + 256);
 static const struct device *hid0_dev, *hid1_dev;
 static const uint8_t hid_mouse_report_desc[] = HID_MOUSE_REPORT_DESC(2);
 static const uint8_t hid_kbd_report_desc[] = HID_KEYBOARD_REPORT_DESC();
-static char mapEvtToChar[10] = {'w', 's', 'a', 'd', '1', '2', '3', '4', '5', ' '};
+static char mapEvtToChar[10] = {'w', 's', 'a', 'd', '1', '2', '3', '4', '5', 'j'};
 
 static K_SEM_DEFINE(evt_sem, 0, 1);	/* starts off "not available" */
 static K_SEM_DEFINE(usb_sem, 1, 1);	/* starts off "available" */
@@ -139,7 +139,7 @@ void clear_mouse_report(void)
 	app_evt_put(new_evt);
 	k_sem_give(&evt_sem);
 
-	printk("Clearing mouse");
+	//printk("Clearing mouse");
 }
 
 void clear_kbd_report(void)
@@ -150,7 +150,7 @@ void clear_kbd_report(void)
 	app_evt_put(new_evt);
 	k_sem_give(&evt_sem);
 
-	printk("Clearing keyboard");
+	//printk("Clearing keyboard");
 }
 
 static int ascii_to_hid(uint8_t ascii)
@@ -354,7 +354,7 @@ static void status_cb(enum usb_dc_status_code status, const uint8_t *param)
 }
 
 static void transmit_key(char character) {
-	printk("Sending |%c|\n", character);
+	//printk("Sending |%c|\n", character);
     int ch = ascii_to_hid(character);
 
     if (ch == -1) {
@@ -461,16 +461,16 @@ void hid_control_thread(void)
                 uint8_t rep[] = {0x00, 0x00, 0x00, 0x00};
                 switch (ev->event_type) {
                     case MOUSE_UP:
-                        rep[MOUSE_Y_REPORT_POS] = 0xE0;
+                        rep[MOUSE_Y_REPORT_POS] = 0xF0;
                         break;
                     case MOUSE_DOWN:
-                        rep[MOUSE_Y_REPORT_POS] = 0x20;
+                        rep[MOUSE_Y_REPORT_POS] = 0x10;
                         break;
                     case MOUSE_LEFT:
-                        rep[MOUSE_X_REPORT_POS] = 0xE0;
+                        rep[MOUSE_X_REPORT_POS] = 0xF0;
                         break;
                     case MOUSE_RIGHT:
-                        rep[MOUSE_X_REPORT_POS] = 0x20;
+                        rep[MOUSE_X_REPORT_POS] = 0x10;
                         break;
                     default:
                         break;
@@ -504,6 +504,8 @@ void hid_control_thread(void)
             } else {
                 LOG_ERR("Invalid character command received");
             }
+
+			app_evt_free(ev);
 		}
 	}
 }
