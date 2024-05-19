@@ -1,9 +1,12 @@
 #include "nanopb_serial.h"
 #include "hid.h"
 #include "src/minecraftmessage.pb.h"
+#include "zephyr/kernel.h"
 #include <zephyr/sys_clock.h>
+#include <zephyr/sys/time_units.h>
 
 #define THREAD_DELAY 1
+#define LOOK_UPDATE_RATE 50 // ms
 
 LOG_MODULE_REGISTER(nanopb);
 static const struct gpio_dt_spec led0 = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
@@ -13,18 +16,26 @@ int64_t last_movement_time = 0;
 
 static enum evt_t executing_movement_event = KBD_CLEAR;
 static enum evt_t executing_look_event = MOUSE_CLEAR;
+static bool looking_now = false;
 
 void look_gesture(enum evt_t event) {
-  int64_t time = sys_clock_tick_get();
-  if (event != executing_look_event || time > last_movement_time) {
-    last_movement_time = time;
-    app_evt_add_new_command(event);
-    executing_look_event = event;
-    clear_mouse_report();
+  looking_now = true;
+  executing_look_event = event;
+  clear_mouse_report();
+}
+
+void look_update_thread() {
+  while (true) {
+    if (looking_now) {
+      app_evt_add_new_command(executing_look_event);
+      clear_mouse_report();
+    }
+    k_msleep(LOOK_UPDATE_RATE);
   }
 }
 
 void interpret_gesture(GestureType gesture) {
+  looking_now = false;
   switch (gesture) {
     case GestureType_LEFT_CLICK:
       app_evt_add_new_command(MOUSE_LEFT_CLICK);
@@ -56,8 +67,8 @@ void interpret_gesture(GestureType gesture) {
       clear_kbd_report();
       break;
     case GestureType_JUMP:
+      ////printk("Got jump");
       app_evt_add_new_command(KBD_SPACE);
-      clear_kbd_report();
       break;
     case GestureType_LOOK_UP:
       look_gesture(MOUSE_UP);
@@ -74,24 +85,24 @@ void interpret_gesture(GestureType gesture) {
 void interpret_position(int32_t x, int32_t y) {
   enum evt_t event;
   if (y == 1) {
-    printk("Got backward");
+    //printk("Got backward");
     event = KBD_BACKWARD;
   } else if (y == 3) {
-    printk("Got forward");
+    //printk("Got forward");
     event = KBD_FORWARD;
   } else if (x == 1) {
-    printk("Got left");
+    //printk("Got left");
     event = KBD_LEFT;
   } else if (x == 3) {
-    printk("Got right");
+    //printk("Got right");
     event = KBD_RIGHT;
   } else {
-    printk("Got centre");
+    //printk("Got centre");
     event = KBD_CLEAR;
   }
 
   if (event != executing_movement_event) {
-    printk("New command, clearing");
+    //printk("New command, clearing");
     clear_kbd_report();
     app_evt_add_new_command(event);
     executing_movement_event = event;
@@ -150,20 +161,17 @@ void uart_rx_cb(const struct device *dev, void *user_data) {
 
             interpret_message(message);
 
-            printk("Message Type: %d\n", message.message_type);
-            printk("Gesture: %d\n", message.gesture);
-            printk("X Ultrasonic: %d\n", message.x_ultrasonic);
-            printk("Y Ultrasonic: %d\n", message.y_ultrasonic);
+            // //printk("Message Type: %d\n", message.message_type);
+            // //printk("Gesture: %d\n", message.gesture);
+            // //printk("X Ultrasonic: %d\n", message.x_ultrasonic);
+            // //printk("Y Ultrasonic: %d\n", message.y_ultrasonic);
             count = 0;
             
         }
-       
-        
       }
  
   }
 }
-
 
 void init_nanopb(void) {
     int ret;
@@ -181,3 +189,5 @@ void init_nanopb(void) {
 
     return;
 }
+
+K_THREAD_DEFINE(pan_update_thread, 2048, look_update_thread, NULL, NULL, NULL, 4, 0, 0);
